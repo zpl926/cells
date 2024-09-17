@@ -97,3 +97,13 @@ See the list of [contributors](https://github.com/pydio/cells/graphs/contributor
 
 This project is licensed under the AGPLv3 License - see the [LICENSE](LICENSE) file for more details.
 
+setup steps:
+1. sudo useradd -m -s /bin/bash pydio
+2. sudo mkdir -p /opt/pydio/bin /var/cells
+3. sudo chown -R pydio: /opt/pydio /var/cells
+4. sudo tee -a /etc/profile.d/cells-env.sh << EOF
+   export CELLS_WORKING_DIR=/var/cells
+   EOF
+5. sudo chmod 0755 /etc/profile.d/cells-env.sh
+6. sudo setcap 'cap_net_bind_service=+ep' /opt/pydio/bin/cells
+7. sudo ln -s /opt/pydio/bin/cells /usr/local/bin/cells
