@@ -525,6 +525,4 @@ replace github.com/minio/minio => github.com/pydio/minio v0.0.0-20240105133831-b
 //replace github.com/ory/x => /Users/charles/Sources/go/src/github.com/cdujeu/x
 replace github.com/ory/x => github.com/cdujeu/x v0.0.369-0.20240206135400-5f79e7bb2cd2
 
-replace github.com/pydio/cells/v4 => ../cells
-
 replace sourcegraph.com/sourcegraph/appdash-data => github.com/sourcegraph/appdash-data v0.0.0-20151005221446-73f23eafcf67
