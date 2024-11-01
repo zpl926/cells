@@ -101,7 +101,7 @@ func init() {
 				googleAuthHandler := google.NewGoogleAuthHandler(ctx)
 				googleAuthCallback := google.NewGoogleAuthCallback(ctx)
 				mux.Handle("/google/auth", googleAuthHandler)
-				mux.Handle("/google/callback", googleAuthCallback)
+				mux.Handle("/google/auth/callback", googleAuthCallback)
 				// /public endpoint : special handler for index, redirect to /plug/ for the rest
 				ph := index.NewPublicHandler(ctx)
 				handler := servicecontext.HttpWrapperMeta(ctx, ph)
