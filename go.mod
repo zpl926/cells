@@ -5,6 +5,7 @@ go 1.21.0
 toolchain go1.21.11
 
 require (
+	golang.org/x/oauth2/google v0.23.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/ajvb/kala v0.8.4
 	github.com/allegro/bigcache/v3 v3.0.1

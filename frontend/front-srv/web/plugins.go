@@ -42,6 +42,7 @@ import (
 	"github.com/pydio/cells/v4/common/service"
 	servicecontext "github.com/pydio/cells/v4/common/service/context"
 	"github.com/pydio/cells/v4/common/service/frontend"
+	"github.com/pydio/cells/v4/frontend/front-srv/web/google"
 	"github.com/pydio/cells/v4/frontend/front-srv/web/index"
 )
 
@@ -96,7 +97,11 @@ func init() {
 				})
 				mux.Handle("/", indexHandler)
 				mux.Handle(ResetPasswordPath, indexHandler)
-
+				// google auth handler
+				googleAuthHandler := google.NewGoogleAuthHandler(ctx)
+				googleAuthCallback := google.NewGoogleAuthCallback(ctx)
+				mux.Handle("/google/auth", googleAuthHandler)
+				mux.Handle("/google/callback", googleAuthCallback)
 				// /public endpoint : special handler for index, redirect to /plug/ for the rest
 				ph := index.NewPublicHandler(ctx)
 				handler := servicecontext.HttpWrapperMeta(ctx, ph)
