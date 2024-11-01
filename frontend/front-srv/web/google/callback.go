@@ -21,11 +21,19 @@
 package google
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
+
+	"github.com/pydio/cells/v4/common"
+	"github.com/pydio/cells/v4/common/client/grpc"
+	"github.com/pydio/cells/v4/common/proto/idm"
+	"github.com/pydio/cells/v4/common/proto/service"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 type GoogleAuthCallback struct {
@@ -47,7 +55,6 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken := token.RefreshToken
 	accessToken := token.AccessToken
 
 	// idToken := token.Extra("id_token")
@@ -69,8 +76,129 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
 		return
 	}
+	email := userInfo["email"]
+	// 检查用户是否存在 否则新建
+	if isOK := userExists(email.(string)); !isOK {
+		err := createUser(email.(string), "1234567890")
+		if err != nil {
+			http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+			return
+		}
+	}
+	// 登录
+	resp, err := loginUser(email.(string), "1234567890")
+	if err != nil {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+	// 登录完, 生成cookie, 并且重定向到index 页面
+	fmt.Fprintf(w, "resp = %s\n", resp)
+}
 
-	fmt.Fprintf(w, "User Info: access token = %s, refresh token = %s user Info = %v\n", accessToken, refreshToken, userInfo)
+func longGrpcCallTimeout() grpc.Option {
+	var d time.Duration
+	d = 60 * time.Minute
+	return grpc.WithCallTimeout(d)
+}
+
+func loginUser(email string, password string) (string, error) {
+	authInfo := map[string]string{
+		"login":    email,
+		"password": password,
+		"type":     "credentials",
+	}
+	loginRequest := map[string]interface{}{
+		"AuthInfo": authInfo,
+	}
+	jsonLoingRequest, err := json.Marshal(loginRequest)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.Post("http://localhost/a/frontend/session", "application/json", bytes.NewBuffer(jsonLoingRequest))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// 读取响应
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func createUser(email string, password string) error {
+	r := service.ResourcePolicyAction_READ
+	w := service.ResourcePolicyAction_WRITE
+	allow := service.ResourcePolicy_allow
+	policies := []*service.ResourcePolicy{
+		{Action: r, Effect: allow, Subject: "profile:standard"},
+		{Action: w, Effect: allow, Subject: "user:" + email},
+		{Action: w, Effect: allow, Subject: "profile:admin"},
+	}
+
+	newUser := &idm.User{
+		Login:      email,
+		GroupPath:  "/",
+		Password:   password,
+		Policies:   policies,
+		Attributes: map[string]string{"profile": common.PydioProfileStandard},
+	}
+	ctx := context.Background()
+	userClient := idm.NewUserServiceClient(grpc.GetClientConnFromCtx(ctx, common.ServiceUser))
+	response, err := userClient.CreateUser(ctx, &idm.CreateUserRequest{User: newUser})
+	if err != nil {
+		return err
+	}
+	u := response.GetUser()
+	// Create corresponding role with correct policies
+	newRole := idm.Role{
+		Uuid:     u.Uuid,
+		Policies: policies,
+		UserRole: true,
+		Label:    "User " + u.Login + " role",
+	}
+	roleClient := idm.NewRoleServiceClient(grpc.GetClientConnFromCtx(ctx, common.ServiceRole))
+	if _, err := roleClient.CreateRole(context.Background(), &idm.CreateRoleRequest{
+		Role: &newRole,
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func userExists(email string) bool {
+	ctx := context.Background()
+	client := idm.NewUserServiceClient(grpc.GetClientConnFromCtx(ctx, common.ServiceUser, longGrpcCallTimeout()))
+	query, _ := anypb.New(&idm.UserSingleQuery{
+		Login: email,
+	})
+	stream, err := client.SearchUser(context.Background(), &idm.SearchUserRequest{
+		Query: &service.Query{
+			SubQueries: []*anypb.Any{query},
+			Limit:      int64(0),
+			Offset:     int64(100),
+		},
+	})
+	if err != nil {
+		return false
+	}
+
+	currNb := 0
+
+	for {
+		response, err := stream.Recv()
+		if err != nil {
+			break
+		}
+		userName := response.User.Login
+		if userName == email {
+			return true
+		}
+		currNb++
+	}
+	return false
 }
 
 func fetchGoogleUserInfo(accessToken string) (map[string]interface{}, error) {
