@@ -24,9 +24,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
-
-	"encoding/json"
 )
 
 type GoogleAuthCallback struct {
@@ -51,11 +48,11 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 解析ID令牌以获取用户信息
-	var claims map[string]interface{}
-	if err := json.NewDecoder(strings.NewReader(idToken.(string))).Decode(&claims); err != nil {
-		http.Error(w, "Failed to parse ID token", http.StatusInternalServerError)
-		return
-	}
+	// var claims map[string]interface{}
+	// if err := json.NewDecoder(strings.NewReader(idToken.(string))).Decode(&claims); err != nil {
+	// 	http.Error(w, "Failed to parse ID token", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	fmt.Fprintf(w, "User Info: %v\n", claims)
+	fmt.Fprintf(w, "User Info: %v\n", idToken)
 }
