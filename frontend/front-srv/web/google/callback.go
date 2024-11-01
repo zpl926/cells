@@ -41,6 +41,9 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken := token.RefreshToken
+	accessToken := token.AccessToken
+
 	idToken := token.Extra("id_token")
 	if idToken == nil {
 		http.Error(w, "ID Token not found", http.StatusInternalServerError)
@@ -54,5 +57,5 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	fmt.Fprintf(w, "User Info: %v\n", idToken)
+	fmt.Fprintf(w, "User Info: access token = %s, refresh token = %s\n", accessToken, refreshToken)
 }
