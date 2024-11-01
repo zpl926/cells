@@ -24,7 +24,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -37,6 +37,18 @@ import (
 )
 
 type GoogleAuthCallback struct {
+}
+
+type TokenInfo struct {
+	JWT        string    `json:"JWT"`
+	ExpireTime int64     `json:"ExpireTime"`
+	Token      TokenData `json:"Token"`
+}
+
+type TokenData struct {
+	AccessToken string `json:"AccessToken"`
+	IDToken     string `json:"IDToken"`
+	ExpiresAt   string `json:"ExpiresAt"`
 }
 
 func NewGoogleAuthCallback(ctx context.Context) *GoogleAuthCallback {
@@ -56,19 +68,6 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken := token.AccessToken
-
-	// idToken := token.Extra("id_token")
-	// if idToken == nil {
-	// 	http.Error(w, "ID Token not found", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// 解析ID令牌以获取用户信息
-	// var claims map[string]interface{}
-	// if err := json.NewDecoder(strings.NewReader(idToken.(string))).Decode(&claims); err != nil {
-	// 	http.Error(w, "Failed to parse ID token", http.StatusInternalServerError)
-	// 	return
-	// }
 
 	// 获取用户信息
 	userInfo, err := fetchGoogleUserInfo(accessToken)
@@ -92,7 +91,31 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 登录完, 生成cookie, 并且重定向到index 页面
-	fmt.Fprintf(w, "resp = %s\n", resp)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	tmpl, err := template.New("loading").Parse(Loader)
+	if err != nil {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+	var tokenInfo TokenInfo
+	err = json.Unmarshal([]byte(resp), &tokenInfo)
+	if err != nil {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+	byteToken, err := json.Marshal(tokenInfo.Token)
+	if err != nil {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(200)
+	TokenCfg := struct {
+		MyToken string
+	}{
+		MyToken: string(byteToken),
+	}
+	tmpl.Execute(w, TokenCfg)
+	// fmt.Fprintf(w, "resp = %s\n", resp)
 }
 
 func longGrpcCallTimeout() grpc.Option {
@@ -228,3 +251,28 @@ func fetchGoogleUserInfo(accessToken string) (map[string]interface{}, error) {
 
 	return userInfo, nil
 }
+
+var Loader = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Data and Redirect</title>
+</head>
+<body>
+    <h1>loading</h1>
+    <script>
+        // 页面加载时执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 将数据保存到 localStorage
+            localStorage.setItem('token4', {{.MyToken}});
+            // 打印确认信息（仅用于调试）
+            console.log('数据已保存到 localStorage');
+            // 跳转到 index 页面
+            window.location.href = 'index';
+        });
+    </script>
+</body>
+</html>
+`
