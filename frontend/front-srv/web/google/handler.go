@@ -45,10 +45,6 @@ func NewGoogleAuthHandler(ctx context.Context) *GoogleAuthHandler {
 	return &GoogleAuthHandler{}
 }
 
-func NewGoogleAuthCallback(ctx context.Context) *GoogleAuthCallback {
-	return &GoogleAuthCallback{}
-}
-
 // ServeHTTP 重定向到google identity 接口
 func (h *GoogleAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := googleOAuthConfig.AuthCodeURL("oauthStateString")

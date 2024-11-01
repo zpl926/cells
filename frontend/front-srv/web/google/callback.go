@@ -22,11 +22,17 @@ package google
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
 type GoogleAuthCallback struct {
+}
+
+func NewGoogleAuthCallback(ctx context.Context) *GoogleAuthCallback {
+	return &GoogleAuthCallback{}
 }
 
 func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,11 +50,11 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	refreshToken := token.RefreshToken
 	accessToken := token.AccessToken
 
-	idToken := token.Extra("id_token")
-	if idToken == nil {
-		http.Error(w, "ID Token not found", http.StatusInternalServerError)
-		return
-	}
+	// idToken := token.Extra("id_token")
+	// if idToken == nil {
+	// 	http.Error(w, "ID Token not found", http.StatusInternalServerError)
+	// 	return
+	// }
 
 	// 解析ID令牌以获取用户信息
 	// var claims map[string]interface{}
@@ -57,5 +63,40 @@ func (h *GoogleAuthCallback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	fmt.Fprintf(w, "User Info: access token = %s, refresh token = %s\n", accessToken, refreshToken)
+	// 获取用户信息
+	userInfo, err := fetchGoogleUserInfo(accessToken)
+	if err != nil {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "User Info: access token = %s, refresh token = %s user Info = %v\n", accessToken, refreshToken, userInfo)
+}
+
+func fetchGoogleUserInfo(accessToken string) (map[string]interface{}, error) {
+	// 使用 access_token 请求用户信息
+	req, err := http.NewRequest("GET", "https://www.googleapis.com/oauth2/v3/userinfo", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo map[string]interface{}
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }
