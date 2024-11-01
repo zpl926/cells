@@ -30,8 +30,6 @@ import (
 
 var (
 	googleOAuthConfig = &oauth2.Config{
-		// ClientID:     "722972143299-5kj5fqfs1agvoploinoggv2tcbd32cuj.apps.googleusercontent.com",
-		// ClientSecret: "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",
 		RedirectURL: "https://frs.forthtech.io/google/auth/callback",
 		Scopes:      []string{"openid", "profile", "email"},
 		Endpoint:    google.Endpoint,
