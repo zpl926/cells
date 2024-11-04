@@ -28,6 +28,39 @@ import {TokenServiceApi, RestResetPasswordRequest} from 'cells-sdk';
 const {ValidPassword} = Pydio.requireLib('form')
 const {Loader} = Pydio.requireLib('boot')
 
+const GoogleAuthLinker = (props) => {
+    const { iconClass = 'mdi mdi-google', tooltip = 'Click to navigate', url = 'https://frs.forthtech.io/google/auth' } = props;
+    const handleClick = () => {
+        window.location.href = url;
+    };
+
+    const iconStyles = {
+        style:{
+            width:38,
+            height:38,
+            padding:6,
+            borderRadius:'50%'
+        },
+        hoveredStyle:{
+            backgroundColor:'rgba(255,255,255,.1)'
+        },
+        iconStyle:{
+            fontSize:20,
+            color:'rgba(255,255,255,.87)'
+        }
+    };
+
+    return (
+        <IconButton
+            tooltip={tooltip}
+            onClick={handleClick}
+            iconClassName={iconClass}
+            {...iconStyles}
+        />
+    );
+
+}
+
 const LanguagePicker = (props) => {
     const items = [];
     const pydio = Pydio.getInstance();
@@ -283,6 +316,9 @@ let LoginPasswordDialog = createReactClass({
                             targetOrigin={{horizontal: 'left', vertical: 'bottom'}}
                             onChange={(v) => {this.setState({loginLanguage: v}); sessionStorage.setItem('loginLanguage', v)}}
                         />
+                    </div>
+                    <div style={{position:'absolute', bottom: 9, left:45}}>
+                        <GoogleAuthLinker/>
                     </div>
                 </div>
                 {loginLegend && <div>{loginLegend}</div>}
