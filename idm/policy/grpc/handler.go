@@ -23,8 +23,9 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"github.com/pydio/cells/v4/common/broker"
 	"strings"
+
+	"github.com/pydio/cells/v4/common/broker"
 
 	"github.com/ory/ladon"
 	"go.uber.org/zap"
@@ -64,7 +65,7 @@ func (h *Handler) IsAllowed(ctx context.Context, request *idm.PolicyEngineReques
 	var allowed bool
 
 	for _, subject := range request.Subjects {
-
+		log.Logger(ctx).Info("subject", zap.Any("subject", subject))
 		ladonRequest := &ladon.Request{
 			Subject:  subject,
 			Resource: request.Resource,
