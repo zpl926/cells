@@ -84,7 +84,7 @@ func HttpWrapperPolicy(ctx context.Context, h http.Handler) http.Handler {
 			}
 			code := 401
 			body := "Unauthorized"
-			log.Logger(ctx).Debug("PolicyHttpHandlerWrapper denied access", zap.Error(err), zap.Any("request", request))
+			log.Logger(ctx).Info("PolicyHttpHandlerWrapper denied access", zap.Error(err), zap.Any("request", request))
 			var msg string
 			if err != nil {
 				code = 500
