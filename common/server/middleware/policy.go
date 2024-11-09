@@ -52,11 +52,11 @@ func HttpWrapperPolicy(ctx context.Context, h http.Handler) http.Handler {
 		// Find profile in claims, if any
 		if cValue := r.Context().Value(claim.ContextKey); cValue != nil {
 			if claims, ok := cValue.(claim.Claims); ok {
-				log.Logger(ctx).Info("Got Claims", zap.Any("claims", claims))
+				// log.Logger(ctx).Debug("Got Claims", zap.Any("claims", claims))
 				policyRequestContext[HTTPMetaJwtClientApp] = claims.GetClientApp()
 				policyRequestContext[HTTPMetaJwtIssuer] = claims.Issuer
 				subjects = permissions.PolicyRequestSubjectsFromClaims(claims)
-				log.Logger(ctx).Info("Got subjects", zap.Any("subjects", subjects))
+				// log.Logger(ctx).Info("Got subjects", zap.Any("subjects", subjects))
 			}
 		} else {
 			log.Logger(ctx).Debug("No Claims Found", zap.Any("ctx", ctx))

@@ -64,13 +64,24 @@ func (h *Handler) IsAllowed(ctx context.Context, request *idm.PolicyEngineReques
 	}
 	var allowed bool
 
+	log.Logger(ctx).Info("request", zap.Any("request", request))
+	isBinaryDownload := false
+	if strings.Contains(request.Resource, "frontend/binaries/USER") && request.Action == "GET" {
+		isBinaryDownload = true
+	}
+
 	for _, subject := range request.Subjects {
 		log.Logger(ctx).Info("subject", zap.Any("subject", subject))
+
 		ladonRequest := &ladon.Request{
 			Subject:  subject,
 			Resource: request.Resource,
 			Action:   request.Action,
 			Context:  reqContext,
+		}
+
+		if strings.Contains(subject, "profile:anon") && isBinaryDownload {
+			allowed = true
 		}
 
 		if err := h.dao.IsAllowed(ladonRequest); err == nil {
